@@ -69,7 +69,7 @@ pip install -r requirements.txt
 
 ## Configuration
 
-API keys are read from `conf/config.ini` or environment variables.
+API keys are read from `conf/config.ini`.
 
 Example `conf/config.ini`:
 
