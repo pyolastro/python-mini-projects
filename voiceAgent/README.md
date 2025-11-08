@@ -145,6 +145,6 @@ elif cmd == "joke":
     speak(result)
 ```
 
-## 📜 License
+## License
 
 MIT License © 2025 pyolastro
