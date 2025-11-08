@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Web Chat Bot</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; }
+    #log { border: 1px solid #ddd; padding: 1rem; border-radius: 12px; height: 300px; overflow: auto; }
+    .you { color: #444; } .bot { color: #0a7; }
+    .row { margin: .35rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Web Chat Bot</h1>
+
+  <details open>
+    <summary>REST</summary>
+    <div id="log"></div>
+    <form id="form" style="margin-top:1rem; display:flex; gap:.5rem">
+      <input id="msg" placeholder="Type a message…" style="flex:1" />
+      <button>Send</button>
+    </form>
+  </details>
+
+  <details style="margin-top:1rem">
+    <summary>WebSocket</summary>
+    <div style="display:flex; gap:.5rem; margin:.5rem 0">
+      <button id="wsConnect">Connect</button>
+      <button id="wsDisconnect">Disconnect</button>
+    </div>
+    <div id="wslog" style="border:1px solid #ddd; padding:1rem; border-radius:12px; height:200px; overflow:auto;"></div>
+    <form id="wsform" style="margin-top:.5rem; display:flex; gap:.5rem">
+      <input id="wsmsg" placeholder="Type a message…" style="flex:1" />
+      <button>Send</button>
+    </form>
+  </details>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+    const KEY = "dev-secret";
+    const USER = "web-demo";
+
+    // REST demo
+    const log = document.getElementById("log");
+    const form = document.getElementById("form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const message = document.getElementById("msg").value.trim();
+      if (!message) return;
+      add("you", message);
+      document.getElementById("msg").value = "";
+
+      const res = await fetch(API + "/chat", {
+        method: "POST",
+        headers: {"Content-Type":"application/json","x-api-key":KEY},
+        body: JSON.stringify({ user_id: USER, message })
+      });
+      const data = await res.json();
+      add("bot", data.reply);
+    });
+
+    function add(role, text) {
+      const row = document.createElement("div");
+      row.className = "row " + role;
+      row.textContent = (role === "you" ? "You: " : "Bot: ") + text;
+      log.appendChild(row);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // WebSocket demo
+    let ws;
+    const wslog = document.getElementById("wslog");
+    function wAdd(text) {
+      const row = document.createElement("div");
+      row.textContent = text;
+      wslog.appendChild(row);
+      wslog.scrollTop = wslog.scrollHeight;
+    }
+
+    document.getElementById("wsConnect").onclick = () => {
+      ws = new WebSocket(`ws://127.0.0.1:8000/ws/${USER}?key=${KEY}`);
+      ws.onopen = () => wAdd("[connected]");
+      ws.onmessage = (e) => wAdd("Bot: " + e.data);
+      ws.onclose = () => wAdd("[disconnected]");
+    };
+    document.getElementById("wsDisconnect").onclick = () => ws && ws.close();
+    document.getElementById("wsform").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const v = document.getElementById("wsmsg").value.trim();
+      if (!v || !ws || ws.readyState !== 1) return;
+      wAdd("You: " + v);
+      document.getElementById("wsmsg").value = "";
+      ws.send(v);
+    });
+  </script>
+</body>
+</html>
